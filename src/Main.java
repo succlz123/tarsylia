@@ -28,7 +28,7 @@ public class Main {
                 return;
             }
             Elements elementsByClass = body.getElementsByClass("books-warp");
-            ArrayList<HAHA> x = new ArrayList<>();
+            ArrayList<HAHA> list = new ArrayList<>();
             HAHA haha = null;
             for (Element child : elementsByClass) {
                 Elements children = child.children();
@@ -49,16 +49,20 @@ public class Main {
                             divs.add(div);
                         }
                         haha.divList = divs;
-                        x.add(haha);
+                        list.add(haha);
                     }
                 }
             }
 
             Runtime rt = Runtime.getRuntime();
 
-            for (HAHA haha1 : x) {
-                String name = haha1.name;
-                File file = new File(System.getProperty("user.dir") + "/tarsyliatales/" + name);
+            ArrayList<File> pic = new ArrayList<>();
+
+            for (int y = 0; y < list.size(); y++) {
+                HAHA content = list.get(y);
+                String name = content.name;
+                String tar = System.getProperty("user.dir") + "/tarsyliatales/";
+                File file = new File(tar + y + "_" + name);
                 if (!file.exists()) {
                     File parent = file.getParentFile();
                     if (!parent.exists()) {
@@ -67,43 +71,56 @@ public class Main {
                     file.mkdir();
                 }
 
-                createFile(file.getAbsolutePath() + "/简介.txt", haha1.content);
+                createFile(tar + y + ".txt", content.content);
 
-                File coverFiel = new File(file.getAbsolutePath() + "/cover.png");
+                File coverFiel = new File(tar + y + ".png");
                 if (!coverFiel.exists()) {
-                    HttpURLConnection conect = conect(haha1.pic);
+                    HttpURLConnection conect = conect(content.pic);
                     InputStream in = conect.getInputStream();
                     writeStream2File(new BufferedInputStream(in), coverFiel.getAbsolutePath());
                 }
 
-                List<Div> divList = haha1.divList;
-                for (Div div : divList) {
-                    File file1 = new File(file.getAbsolutePath() + "/" + div.name);
+//                rt.exec("cwebp -q 100 " + coverFiel.getAbsolutePath() + " -o " + coverFiel.getAbsolutePath().replace(".png", ".webp"));
+//
+//                Thread.sleep(1000);
+//                coverFiel.delete();
+
+                List<Div> divList = content.divList;
+                for (int i = 0; i < divList.size(); i++) {
+                    Div div = divList.get(i);
+                    File file1 = new File(file.getAbsolutePath() + "/" + i + "_" + div.name);
                     if (!file1.exists()) {
                         file1.mkdir();
                     }
 
                     URL url1 = new URL(div.url);
                     Element body1 = Jsoup.parse(url1, 100000).body();
-                    System.out.println(div.name);
+                    System.out.print("\n" + div.name);
                     Elements imageGallery = body1.getElementById("imageGallery").children();
                     HashMap<Integer, String> pics = new HashMap<>();
-                    for (int i = 0; i < imageGallery.size(); i++) {
-                        Element element = imageGallery.get(i);
+
+                    for (int j = 0; j < imageGallery.size(); j++) {
+                        Element element = imageGallery.get(j);
                         pics.put(i, element.attr("data-src"));
-                        File file2 = new File(file1.getAbsolutePath() + "/" + i + ".jpg");
+                        File file2 = new File(file1.getAbsolutePath() + "/" + j + ".jpg");
                         if (file2.exists()) {
                             continue;
                         }
-                        System.out.print(i + ".jpg");
+                        System.out.print(j + ".jpg");
                         HttpURLConnection conect = conect(element.attr("data-src"));
                         InputStream in = conect.getInputStream();
                         writeStream2File(new BufferedInputStream(in), file2.getAbsolutePath());
+
+//                        pic.add(file2);
+//                        rt.exec("cwebp -q 100 " + file2.getAbsolutePath() + " -o " + file2.getAbsolutePath().replace(".jpg", ".webp"));
                     }
                     div.pics = pics;
                 }
             }
-
+//            Thread.sleep(10000);
+//            for (File file2 : pic) {
+//                file2.delete();
+//            }
         } catch (ProtocolException e) {
             e.printStackTrace();
         } catch (MalformedURLException e) {
@@ -111,7 +128,6 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
     private static void createFile(String name, String text) {
